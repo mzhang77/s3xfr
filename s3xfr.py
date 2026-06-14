@@ -1,12 +1,6 @@
 
 '''
 usage:
-export AWS_ACCESS_KEY_ID=...
-export AWS_SECRET_ACCESS_KEY=...
-export AWS_SESSION_TOKEN=...
-export AWS_DEFAULT_REGION=us-west-2
-export S3_TRANSFER_BUCKET=my-temp-bucket
-export S3_TRANSFER_PREFIX=tmp-transfer
 
 python s3xfr.py send ./data
 
@@ -15,6 +9,18 @@ python s3xfr.py receive '<token>' -o ./received
 python s3xfr.py history
 
 python s3xfr.py remote-history
+
+optional config file:
+~/.s3xfr.json
+
+example:
+{
+  "S3_TRANSFER_BUCKET": "my-temp-bucket",
+  "S3_TRANSFER_PREFIX": "tmp-transfer",
+  "AWS_DEFAULT_REGION": "us-west-2"
+}
+
+Environment variables override config file values.
 '''
 
 
@@ -35,7 +41,20 @@ import boto3
 
 
 HISTORY_FILE = Path.home() / ".s3xfr_history.jsonl"
+CONFIG_FILE = Path.home() / ".s3xfr.json"
 MANIFEST_NAME = "manifest.json"
+
+
+def load_config():
+    if not CONFIG_FILE.exists():
+        return
+
+    with open(CONFIG_FILE) as f:
+        config = json.load(f)
+
+    for key, value in config.items():
+        if value is not None and key not in os.environ:
+            os.environ[key] = str(value)
 
 
 def save_history(src_path: str, token: str, bucket: str, key: str):
@@ -191,6 +210,7 @@ def receive(args):
 
 def main():
     parser = argparse.ArgumentParser()
+    load_config()
     sub = parser.add_subparsers(required=True)
 
     p_send = sub.add_parser("send")
