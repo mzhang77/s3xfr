@@ -11,6 +11,7 @@ Instead of setting up SCP, SSH access, VPNs, or temporary web servers, `s3xfr` u
 - Single-token download workflow
 - Keeps local transfer history
 - Maintains a remote manifest in S3
+- Optional configuration file support
 - No server required
 
 ## Requirements
@@ -38,6 +39,20 @@ Configure transfer bucket:
 export S3_TRANSFER_BUCKET=my-temp-bucket
 export S3_TRANSFER_PREFIX=tmp-transfer
 ```
+
+Or create an optional config file:
+
+```json
+~/.s3xfr.json
+
+{
+  "S3_TRANSFER_BUCKET": "my-temp-bucket",
+  "S3_TRANSFER_PREFIX": "tmp-transfer",
+  "AWS_DEFAULT_REGION": "us-west-2"
+}
+```
+
+Environment variables always override values from the config file.
 
 ## Send
 
@@ -83,6 +98,16 @@ The manifest is stored at:
 s3://$S3_TRANSFER_BUCKET/$S3_TRANSFER_PREFIX/manifest.json
 ```
 
+## Configuration
+
+`s3xfr` loads configuration in the following order:
+
+1. Environment variables
+2. `~/.s3xfr.json`
+3. Built-in defaults
+
+This allows a shared default configuration while still making it easy to temporarily override settings from the shell.
+
 ## How It Works
 
 When sending:
@@ -90,7 +115,8 @@ When sending:
 1. Archive source as `.tar.gz`
 2. Upload archive to S3
 3. Generate a portable token
-4. Save metadata locally and remotely
+4. Save metadata locally (~/.s3xfr_history.jsonl)
+5. Update remote manifest in S3 (manifest.json)
 
 When receiving:
 
