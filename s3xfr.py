@@ -8,10 +8,13 @@ export AWS_DEFAULT_REGION=us-west-2
 export S3_TRANSFER_BUCKET=my-temp-bucket
 export S3_TRANSFER_PREFIX=tmp-transfer
 
-python s3xfer.py send ./data
+python s3xfr.py send ./data
 
-python s3xfer.py receive '<token>' -o ./received
+python s3xfr.py receive '<token>' -o ./received
 
+python s3xfr.py history
+
+python s3xfr.py remote-history
 '''
 
 
