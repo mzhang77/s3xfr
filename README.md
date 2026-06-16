@@ -11,6 +11,7 @@ Instead of setting up SCP, SSH access, VPNs, or temporary web servers, `s3xfr` u
 - Single-token download workflow
 - Keeps local transfer history
 - Maintains a remote manifest in S3
+- Supports downloading directly from a remote-history index (for example: `receive 3`)
 - Optional configuration file support
 - No server required
 
@@ -74,6 +75,15 @@ Or specify an output directory:
 python s3xfr.py receive '<token>' -o ./received
 ```
 
+You can also download directly from an entry in `remote-history` by using its numeric index:
+
+```bash
+python s3xfr.py receive 3
+python s3xfr.py receive 3 -o ./received
+```
+
+This is equivalent to copying the token from entry `[3]` in `remote-history`, but is usually much more convenient.
+
 ## Local History
 
 ```bash
@@ -96,6 +106,25 @@ The manifest is stored at:
 
 ```text
 s3://$S3_TRANSFER_BUCKET/$S3_TRANSFER_PREFIX/manifest.json
+```
+
+Example:
+
+```text
+[1] 2026-06-14 23:09:26
+...
+
+[2] 2026-06-14 23:24:57
+...
+
+[3] 2026-06-15 09:29:39
+...
+```
+
+You can download the third entry directly with:
+
+```bash
+python s3xfr.py receive 3
 ```
 
 ## Configuration

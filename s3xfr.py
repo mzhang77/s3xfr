@@ -1,10 +1,10 @@
-
 '''
 usage:
 
 python s3xfr.py send ./data
 
 python s3xfr.py receive '<token>' -o ./received
+python s3xfr.py receive 3 -o ./received
 
 python s3xfr.py history
 
@@ -103,6 +103,36 @@ def read_manifest(s3, bucket: str, prefix: str):
     return json.loads(obj["Body"].read().decode())
 
 
+def resolve_receive_meta(value: str) -> dict:
+    """Resolve a receive argument as either a remote-history index or a token."""
+    if not value.isdigit():
+        return b64url_decode(value)
+
+    index = int(value)
+    if index <= 0:
+        raise ValueError("History index must be 1 or greater")
+
+    bucket = os.environ["S3_TRANSFER_BUCKET"]
+    prefix = os.environ.get("S3_TRANSFER_PREFIX", "machine-transfer")
+
+    s3 = boto3.client("s3")
+    records = read_manifest(s3, bucket, prefix)
+
+    if index > len(records):
+        raise IndexError(f"History index {index} is out of range; remote history has {len(records)} item(s)")
+
+    record = records[index - 1]
+    if "token" in record:
+        return b64url_decode(record["token"])
+
+    return {
+        "bucket": record["bucket"],
+        "key": record["key"],
+        "type": "tar.gz",
+        "created_at": record.get("time"),
+    }
+
+
 def b64url_encode(data: dict) -> str:
     raw = json.dumps(data, separators=(",", ":")).encode()
     return base64.urlsafe_b64encode(raw).decode().rstrip("=")
@@ -189,7 +219,7 @@ def remote_history(args):
 
 
 def receive(args):
-    meta = b64url_decode(args.token)
+    meta = resolve_receive_meta(args.token)
 
     bucket = meta["bucket"]
     key = meta["key"]
@@ -218,7 +248,7 @@ def main():
     p_send.set_defaults(func=send)
 
     p_recv = sub.add_parser("receive")
-    p_recv.add_argument("token")
+    p_recv.add_argument("token", help="Transfer token, or a number from remote-history")
     p_recv.add_argument("-o", "--output", default=".")
     p_recv.set_defaults(func=receive)
 
